@@ -34,7 +34,7 @@ class DeepfakeBot:
             context = yaml.safe_load(ctxfile)
 
         self.personality = context["llm"]["PERSONALITY"]
-        self.panTiltDes = context["llm"]["CAMERA_DESCRIPTION"]
+        self.panTiltDes = context["llm"]["PANTILT_DESCRIPTION"]
         self.waitDes = context["llm"]["WAIT_DESCRIPTION"]
         self.textDes = context["llm"]["TEXT_DESCRIPTION"]
 
@@ -61,11 +61,17 @@ class DeepfakeBot:
 
         if (f.frames / f.samplerate) > 0.1:
             audio_file = open("request.wav", "rb")
-            transcript = self.client.audio.transcriptions.create(model="whisper-1", file=audio_file, response_format="text")
+            transcript = self.client.audio.transcriptions.create(model="gpt-4o-mini-transcribe", file=audio_file, response_format="text")
 
             return str(transcript)
         else:
             return "Error, recording was too short"
+        
+    def callback(self, indata, frames, time, status):
+        """This is called (from a separate thread) for each audio block."""
+        if status:
+            print(status, file=sys.stderr)
+        self.queue.put(indata.copy())
         
     def piListener(self):
         """
@@ -108,9 +114,6 @@ class DeepfakeBot:
         ) as response:
             response.stream_to_file("response.mp3")
 
-        # generate audio
-        response = self.client.audio.speech.create(model="tts-1", voice="onyx", input=f"{str(text)}",)
-        response.stream_to_file("response.mp3")
         #time.sleep(1)
 
         # plays the response
@@ -172,3 +175,11 @@ class DeepfakeBot:
                 else:
                     print("Error, unknown message generated, possible hallucination.  ")
                     print(f"Message: {str(message)}")
+
+if __name__ == '__main__':
+    deepFakeBot = DeepfakeBot()
+
+    while True:
+        deepFakeBot.piListener()
+        text = deepFakeBot.transcribeAudio()
+        deepFakeBot.callLLM(text)
