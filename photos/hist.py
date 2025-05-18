@@ -20,21 +20,19 @@ def show_image_histogram(image_path):
         plt.xlim([0, 256])
         plt.show()
     else:
-        # Color image: convert BGR to RGB for consistent plotting
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        colors = ('r', 'g', 'b')
-        plt.figure()
-        plt.title("Color Histogram")
-        plt.xlabel("Pixel Value")
-        plt.ylabel("Frequency")
-
-        for i, color in enumerate(colors):
-            hist = cv2.calcHist([img], [i], None, [256], [0, 256])
+        # Color image: BGR channels
+        color_channels = {'r': 0, 'g': 1, 'b': 2}
+        for color, channel in color_channels.items():
+            plt.figure()
+            plt.title(f"{color.upper()} Channel Histogram")
+            plt.xlabel("Pixel Value")
+            plt.ylabel("Frequency")
+            hist = cv2.calcHist([img], [channel], None, [256], [0, 256])
             plt.plot(hist, color=color)
             plt.xlim([0, 256])
+            plt.show()
 
-        plt.show()
-
-# Example usage:
-# Replace 'your_image.jpg' with your actual image file path
+# Replace with your image file
 show_image_histogram('source.png')
+#show_image_histogram('control.png')
+#show_image_histogram('test.png')

@@ -12,6 +12,9 @@ import sys # needed for file status
 from adafruit_servokit import ServoKit # needed for servo movements
 import threading # needed for threading
 
+from elevenlabs.client import ElevenLabs # needed for ElevenLabs API / deepfake audio
+from elevenlabs import play # needed for ElevenLabs API / deepfake audio
+
 import pygame # needed for audio
 pygame.init()
 
@@ -40,6 +43,10 @@ class DeepfakeBot:
         self.panTiltDes = context["llm"]["PANTILT_DESCRIPTION"]
         self.waitDes = context["llm"]["WAIT_DESCRIPTION"]
         self.textDes = context["llm"]["TEXT_DESCRIPTION"]
+
+        # ElevenLabs variables
+        self.elevenLabsClient = ElevenLabs(api_key=config["elevenlabs"]["API_KEY"])
+        self.deepfakeVoice = config["elevenlabs"]["VOICE_ID"]
 
         # audio variables
         self.recordStatus = False # boolean for if the audio is being saved
@@ -138,6 +145,23 @@ class DeepfakeBot:
                             #print("clearing queue")
                             self.queue.get()
 
+
+    def deepFakeAudio(self, text):
+        """
+        Turns the provided text into audio and plays it
+
+        Args:
+            text (str): The text to turn to audio
+        """
+
+        audio = self.elevenLabsClient.text_to_speech.convert(
+            text=text,
+            voice_id=self.deepfakeVoice,
+            model_id="eleven_multilingual_v2",
+            output_format="mp3_44100_128",
+        )
+        play(audio)
+
     def textToSpeech(self, text):
         """
         Turns the provided text into audio and plays it
@@ -202,7 +226,8 @@ class DeepfakeBot:
                 if message.startswith("TEXT"):
                     #print("text")
                     message = message.split(',', 1)[1] # gets rid of the TEXT part of the message
-                    self.textToSpeech(message) # sends the message to the text to speech function
+                    #self.textToSpeech(message) # sends the message to the text to speech function
+                    self.deepFakeAudio(message) # sends the message to the deepfake audio function
                 elif message.startswith("WAIT"):
                     #print("wait")
                     message = message.split(", ", 1)[1]
