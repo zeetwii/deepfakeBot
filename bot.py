@@ -9,6 +9,9 @@ import soundfile as sf # needed to create the audio files
 import queue # needed for making the queue that handles real time audio
 import sys # needed for file status
 
+from adafruit_servokit import ServoKit # needed for servo movements
+import threading # needed for threading
+
 import pygame # needed for audio
 pygame.init()
 
@@ -45,6 +48,45 @@ class DeepfakeBot:
 
         # setup microphone
         self.deviceInfo = sd.query_devices(kind='input')
+
+        # setup servo kit
+        self.kit = ServoKit(channels=16)
+        self.oldPanAngle = 90
+        self.oldTiltAngle = 90
+
+        # Note these values will change depending on what servos you are using
+        self.kit.servo[0].actuation_range = 270
+        self.kit.servo[0].set_pulse_width_range(500, 2500)
+        self.kit.servo[1].set_pulse_width_range(500, 2500)
+        
+        print("init servos")
+        self.kit.servo[0].angle = 90
+        self.kit.servo[1].angle = 90
+        time.sleep(1)
+        print("Initalization finished")
+
+    def slowPanTilt(self, panAngle, tiltAngle):
+        """
+        Slowly moves the servos to the desired angles
+
+        Args:
+            panAngle (int): The angle to move the pan servo to
+            tiltAngle (int): The angle to move the tilt servo to
+        """
+
+        # calculate the difference between the current and desired angles
+        panDiff = panAngle - self.oldPanAngle
+        tiltDiff = tiltAngle - self.oldTiltAngle
+
+        # move the servos in small increments
+        for i in range(0, 100, 5):
+            self.kit.servo[0].angle = self.oldPanAngle + (panDiff * i / 100)
+            self.kit.servo[1].angle = self.oldTiltAngle + (tiltDiff * i / 100)
+            time.sleep(0.025)
+
+        # update the old angles
+        self.oldPanAngle = panAngle
+        self.oldTiltAngle = tiltAngle
 
     def transcribeAudio(self):
         """
@@ -134,7 +176,7 @@ class DeepfakeBot:
         movementString = ""
 
         completion = self.client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-nano",
         messages=[
             {"role": "system", "content": f"{str(self.personality)}"},
             {"role": "system", "content": f"{str(self.panTiltDes)}"},
@@ -172,6 +214,14 @@ class DeepfakeBot:
                 elif message.startswith("PANTILT"):
                     #print("pan/tilt")
                     print(f"Pan/Tilt message sent: {str(message)}")
+
+                    message = message.split(", ", 1)[1]
+                    message = message.split(",")
+                    
+                    panAngle = int(message[0])
+                    tiltAngle = int(message[1])
+                    #print(f"Pan/Tilt angles: {str(panAngle)}, {str(tiltAngle)}")
+                    self.slowPanTilt(panAngle, tiltAngle)
                 else:
                     print("Error, unknown message generated, possible hallucination.  ")
                     print(f"Message: {str(message)}")
