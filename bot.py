@@ -200,7 +200,7 @@ class DeepfakeBot:
         movementString = ""
 
         completion = self.client.chat.completions.create(
-        model="gpt-4.1-nano",
+        model="gpt-4.1-mini",
         messages=[
             {"role": "system", "content": f"{str(self.personality)}"},
             {"role": "system", "content": f"{str(self.panTiltDes)}"},
