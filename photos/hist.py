@@ -1,6 +1,11 @@
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
+import cv2 # OpenCV for image processing
+import matplotlib.pyplot as plt # Matplotlib for plotting histograms
+
+import tkinter as tk # Tkinter for GUI
+from tkinter import filedialog # File dialog for selecting images
+
+root = tk.Tk()
+root.withdraw()
 
 def show_image_histogram(image_path):
     # Load image
@@ -32,7 +37,15 @@ def show_image_histogram(image_path):
             plt.xlim([0, 256])
             plt.show()
 
-# Replace with your image file
-show_image_histogram('source.png')
-#show_image_histogram('control.png')
-#show_image_histogram('test.png')
+file_types = (
+        ("Image files", "*.png *.jpg *.jpeg *.gif *.bmp"),
+        ("All files", "*.*")
+    )
+file_path = filedialog.askopenfilename(title="Select an image for Histograms", filetypes=file_types)
+
+if file_path:
+    show_image_histogram(file_path)
+else:
+    print("No file selected.")
+
+
